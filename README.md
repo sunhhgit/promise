@@ -1,6 +1,6 @@
 # 一步步实现一个Promise
 
-1. 平常用promise的时候, 是通过new关键字来new Promise(), 所以咱们应该用构造函数或者class来实现. 都2021年了, 咱们就用class来实现一下吧.
+1. 平常用promise的时候, 是通过new关键字来new Promise(), 现在用构造函数或者class来实现.
 
 ```js
 class MPromise {
