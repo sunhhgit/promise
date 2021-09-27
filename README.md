@@ -476,7 +476,7 @@ setTimeout(() => {
 11. catch方法
 
 ```js
-//catch (onRejected)
+catch (onRejected)
  {
     return this.then(null, onRejected);
 }
@@ -488,8 +488,7 @@ setTimeout(() => {
     注意这是一个静态方法, 因为咱们是通过Promise.resolve调用的, 而不是通过实例去调用的.
 
 ```js
-//static
- resolve(value)
+static resolve(value)
  {
     if (value instanceof MPromise) {
         return value;
@@ -506,8 +505,7 @@ setTimeout(() => {
     返回一个新的Promise实例，该实例的状态为rejected。Promise.reject方法的参数reason，会被传递给实例的回调函数。
 
 ```js
-//static
- reject(reason)
+static reject(reason)
  {
     return new MPromise((resolve, reject) => {
         reject(reason);
@@ -523,8 +521,7 @@ setTimeout(() => {
     只要p1、p2、p3之中有一个实例率先改变状态，p的状态就跟着改变。那个率先改变的 Promise 实例的返回值，就传递给p的回调函数。
 
 ```js
-//static
- race(promiseList)
+static race(promiseList)
  {
     return new MPromise((resolve, reject) => {
         const length = promiseList.length;

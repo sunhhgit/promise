@@ -27,6 +27,7 @@ class SPromise {
 
   set status(val) {
     this._status = val
+    // console.log('tttt11 set status this._status=', val)
     switch (val) {
       case FULFILLED:
         this.FULFILLED_CALLBACK_LIST.forEach(callback => {
@@ -43,6 +44,7 @@ class SPromise {
 
   resolve(value) {
     if (this.status === PENDING) {
+      // console.log('tttt1 resolve this.value=' + this.value + ',this.status=' + this.status)
       this.value = value
       this.status = FULFILLED
     }
@@ -50,6 +52,7 @@ class SPromise {
 
   rejected(reason) {
     if (this.status === PENDING) {
+      // console.log('tttt2 rejected this.reason=' + this.reason + ',this.status=' + this.status)
       this.reason = reason
       this.status = REJECTED
     }
@@ -63,6 +66,7 @@ class SPromise {
         queueMicrotask(() => {
           try{
             const x = realOnFulfilled(this.value)
+            // console.log('tttt3 FULFILLED_CALLBACK this.value=>', this.value, x)
             this.resolvePromise(promise2, x, resolve, reject)
           }catch (e) {
             reject(e)
@@ -73,12 +77,14 @@ class SPromise {
         queueMicrotask(() => {
           try{
             const x = realOnRejected(this.reason)
+            // console.log('tttt4 REJECTED_CALLBACK this.reason=>', this.reason, x)
             this.resolvePromise(promise2, x, resolve, reject)
           }catch (e) {
             reject(e)
           }
         })
       }
+      // console.log('tttt9 then promise2 this.status=>', this.status)
       switch (this.status) {
         case FULFILLED:
           fulfilledMicrotask()
@@ -89,15 +95,18 @@ class SPromise {
           this.FULFILLED_CALLBACK_LIST.push(fulfilledMicrotask)
           this.REJECTED_CALLBACK_LIST.push(rejectedMicrotask)
       }
+      // console.log('tttt10 then promise2 this.FULFILLED_CALLBACK_LIST=>', this.FULFILLED_CALLBACK_LIST, this.REJECTED_CALLBACK_LIST)
     })
     return promise2
   }
 
   catch(onRejected) {
+    // console.log('tttt6 catch onRejected=', onRejected)
     return this.then(null, onRejected)
   }
 
   static resolve(value) {
+    // console.log('tttt7 resolve value=', value)
     if (value instanceof SPromise) {
       return value
     }
@@ -108,6 +117,7 @@ class SPromise {
   }
 
   static reject(reason) {
+    // console.log('tttt8 reject reason=', reason)
     return new SPromise((resolve, reject) => {
       reject(reason)
     })
@@ -152,6 +162,7 @@ class SPromise {
   }
 
   resolvePromise(promise2, x, resolve, reject) {
+    // console.log('tttt5 resolvePromise promise2 x', promise2, x)
     if (promise2 === x) {
       return reject(new TypeError('The promise and the return value are the same'))
     }
@@ -225,69 +236,151 @@ class SPromise {
 
 
 // 测试
-// const testPromise = new SPromise((resolve, reject) => {
+const testPromise = new SPromise((resolve, reject) => {
+  setTimeout(() => {
+    resolve(111)
+  }, 1000)
+}).then(value => {
+  console.log('value=', value)
+  // return value
+})
+
+console.log(testPromise)
+
+setTimeout(() => {
+  console.log(testPromise)
+}, 2000)
+
+/**
+ * 为什么promise resolve了一个value, 最后输出的value值确是undefined
+ * 因为现在这种写法, 相当于在.then里return undefined, 所以最后的value是undefined.
+ * 如果显式return一个值, 就不是undefined了；比如return value.
+ */
+
+// const test = new SPromise((resolve, reject) => {
 //   setTimeout(() => {
 //     resolve(111)
 //   }, 1000)
-// }).then(console.log)
+// }).then(value => {
+//   console.log('value1=', value)
+//   return value
+// }).then(value => {
+//   console.log('value2=', value + 1)
+//   return value + 1
+// }).then(value => {
+//   console.log('value3=', value + 1)
+//   return value + 1
+// })
 //
-// console.log(testPromise)
+// console.log(test)
 //
 // setTimeout(() => {
-//   console.log(testPromise)
-// }, 2000)
+//   console.log(test)
+// }, 3000)
+
+/**
+ * 链式调用的时候每一个.then返回的都是一个新promise, 所以每次回调数组FULFILLED_CALLBACK_LIST都是空数组,
+ * 针对这种情况, 确实用数组来存储回调没意义, 完全可以就用一个变量来存储,
+ * 但是还有一种promise使用的方式, 这种情况下, promise实例是同一个, 数组的存在就有了意义,如下
+ */
+
+// test.then(value => {
+//   console.log('value4=', value + 1)
+//   return value + 1
+// })
+// test.then(value => {
+//   console.log('value5=', value + 1)
+//   return value + 1
+// })
+// test.then(value => {
+//   console.log('value6=', value + 1)
+//   return value + 1
+// })
+// test.then(value => {
+//   console.log('value7=', value + 1)
+//   return value + 1
+// })
+//
+// console.log(test)
+//
+// setTimeout(() => {
+//   console.log(test)
+// }, 3000)
 
 //race all测试
-const test1 = new SPromise((resolve, reject) => {
-  setTimeout(() => {
-    resolve('aaaa')
-  }, 3000)
-})
+// const test1 = new SPromise((resolve, reject) => {
+//   setTimeout(() => {
+//     resolve('aaaa')
+//   }, 3000)
+// })
+//
+// const test2 = new SPromise((resolve, reject) => {
+//   setTimeout(() => {
+//     resolve('bbbb')
+//   }, 2000)
+// })
+//
+// const test3 = new SPromise((resolve, reject) => {
+//   setTimeout(() => {
+//     resolve('cccc')
+//   }, 1000)
+// })
+//
+// SPromise.race([test1, test2, test3]).then((val) => {
+//   console.log('有一个promise状态已经改变', val)
+// })
+//
+// SPromise.all([test1, test2, test3]).then((result) => {
+//   console.log('Promise.all', result)
+// })
+//
+//
+// const promise1 = function() {
+//   return new Promise(function(resolve) {
+//     setTimeout(function() {
+//       console.log(1)
+//       resolve(1)
+//     }, 1000)
+//   })
+// }
+//
+// const promise2 = function() {
+//   return new Promise(function(resolve) {
+//     setTimeout(function() {
+//       console.log(2)
+//       resolve(2)
+//     }, 2000)
+//   })
+// }
+// Promise.race([promise1(), promise2()])
+//   .then(function(val) {
+//     console.log('有⼀个 promise 状态已经改变', val)
+//   })
+//
+// Promise.all([promise1(), promise2()])
+//   .then(function(val) {
+//     console.log('Promise.all 结果', val)
+//   })
 
-const test2 = new SPromise((resolve, reject) => {
-  setTimeout(() => {
-    resolve('bbbb')
-  }, 2000)
-})
 
-const test3 = new SPromise((resolve, reject) => {
-  setTimeout(() => {
-    resolve('cccc')
-  }, 1000)
-})
+// 测试catch
+// const test4 = new SPromise((resolve, reject) => {
+//   setTimeout(() => {
+//     console.log('to reject=>' + 111);
+//     reject(111)
+//   }, 1000)
+// }).catch(reason => {
+//   console.log('报错' + reason);
+//   console.log(test4)
+// })
+//
+// setTimeout(() => {
+//   console.log('----------------------------');
+//   console.log(test4);
+// }, 2000)
 
-SPromise.race([test1, test2, test3]).then((val) => {
-  console.log('有一个promise状态已经改变', val)
-})
-
-SPromise.all([test1, test2, test3]).then((result) => {
-  console.log('Promise.all', result)
-})
-
-
-const promise1 = function() {
-  return new Promise(function(resolve) {
-    setTimeout(function() {
-      console.log(1)
-      resolve(1)
-    }, 1000)
-  })
-}
-
-const promise2 = function() {
-  return new Promise(function(resolve) {
-    setTimeout(function() {
-      console.log(2)
-      resolve(2)
-    }, 2000)
-  })
-}
-Promise.race([promise1(), promise2()])
-  .then(function(val) {
-    console.log('有⼀个 promise 状态已经改变', val)
-  })
-
-Promise.all([promise1(), promise2()])
-  .then(function(val) {
-    console.log('Promise.all 结果', val)
-  })
+/**
+ * catch 函数会返回一个新的promise, 而test4就是这个新promise
+ * catch 的回调里, 打印promise的时候, 整个回调还并没有执行完成(所以此时的状态是pending), 只有当整个回调完成了, 才会更改状态
+ * catch 的回调函数, 如果成功执行完成了, 会改变这个新Promise的状态为fulfilled
+ */
